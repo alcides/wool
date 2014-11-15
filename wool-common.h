@@ -5,10 +5,20 @@
    Copyright (C) 2009- Karl-Filip Faxen
       kff@sics.se
 
-   This Source Code Form is subject to the terms of the Mozilla Public
-   License, v. 2.0. If a copy of the MPL was not distributed with this
-   file, You can obtain one at http://mozilla.org/MPL/2.0/.
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2 of the
+   License, or (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+   02111-1307, USA.
 */
 
 #ifndef WOOL_COMMON_H
@@ -114,8 +124,12 @@
   #define FINEST_GRAIN 2000
 #endif
 
+#ifndef MAKE_TRACE
+  #define MAKE_TRACE 0
+#endif
+
 #ifndef LOG_EVENTS
-  #define LOG_EVENTS 0
+  #define LOG_EVENTS MAKE_TRACE
 #endif
 
 #ifndef WOOL_DEFER_BOT_DEC
@@ -557,6 +571,7 @@ typedef struct _Worker {
 
 #if WOOL_MEASURE_SPAN
 
+__attribute__((unused)) 
 static hrtime_t _wool_mspan_before_inline( Task *t )
 {
   hrtime_t e_span = __wool_update_time();
@@ -564,6 +579,7 @@ static hrtime_t _wool_mspan_before_inline( Task *t )
   return e_span;
 }
 
+__attribute__((unused)) 
 static void _wool_mspan_after_inline( hrtime_t e_span, Task *t )
 {
   hrtime_t c_span = __wool_update_time();
@@ -742,7 +758,7 @@ void _WOOL_(fast_spawn)( Worker *self, Task **top, wrapper_t f )
 {
 
   #if WOOL_MEASURE_SPAN
-    p->spawn_span = __wool_update_time();
+    (*top)->spawn_span = __wool_update_time();
   #endif
 
   #if !defined(NDEBUG) && !_WOOL_ordered_stores
@@ -769,7 +785,7 @@ void _WOOL_(fast_spawn)( Worker *self, Task **top, wrapper_t f )
   */
 
   #if LOG_EVENTS
-    if( ptr2idx_curr( self, *top ) < self->n_public ) {
+    if( MAKE_TRACE || ptr2idx_curr( self, *top ) < self->n_public ) {
       logEvent( self, 5 );
     }
   #endif

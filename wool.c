@@ -5,10 +5,22 @@
    Copyright (C) 2009- Karl-Filip Faxen
       kff@sics.se
 
-   This Source Code Form is subject to the terms of the Mozilla Public
-   License, v. 2.0. If a copy of the MPL was not distributed with this
-   file, You can obtain one at http://mozilla.org/MPL/2.0/.
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2 of the
+   License, or (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+   02111-1307, USA.
+
+   The GNU General Public License is contained in the file COPYING.
 */
 
 #define _GNU_SOURCE
@@ -32,18 +44,6 @@
 #include <signal.h>
 #include <sys/types.h>
 
-/* Implements 
-   leapfrogging, 
-   private tasks (fixed depth),
-   peek (check stealable before locking),
-   trylock (steal from other worker if other thief busy),
-   linear stealing (rather than always random)
-   yielding after unsuccessful stealing
-   sleeping after more unsuccessful stealing
-
-   Does not implement
-   Resizing or overflow checking of task pool
-*/
 
 #define SO_STOLE 0
 #define SO_BUSY  1
@@ -78,7 +78,7 @@
 #endif
 
 #ifndef WOOL_TIME
-  #define WOOL_TIME 1
+  #define WOOL_TIME 0
 #endif
 
 #ifndef THREAD_GARAGE
@@ -296,6 +296,8 @@ static long long unsigned
 	             milestone_awj,
 	             milestone_end;
 
+static long long unsigned count_at_first_milestone;
+
 
 #if WOOL_MEASURE_SPAN || LOG_EVENTS || WOOL_PIE_TIMES
 
@@ -412,7 +414,9 @@ static void time_event( Worker *w, int event )
 
     // Return from failed steal
     case 7 :
-        if( w->clock /* level */ == 1 ) {
+        if( w->clock /* level */ == 0 ) {
+          PR_ADD( w, CTR_init, now - prev );
+        } else if( w->clock /* level */ == 1 ) {
           PR_ADD( w, CTR_wsteal, now - prev );
         } else {
           PR_ADD( w, CTR_lsteal, now - prev );
@@ -432,7 +436,11 @@ static void time_event( Worker *w, int event )
 
     // Done
     case 9 : 
-        PR_ADD( w, CTR_close, now - prev );
+        if( w->clock /* level */ == 0 ) {
+          PR_ADD( w, CTR_init, now - prev );
+        } else {
+          PR_ADD( w, CTR_close, now - prev );
+        }
         break;
 
     default: return;
@@ -3032,6 +3040,34 @@ static void *do_work( void *arg )
 
 #if COUNT_EVENTS
 
+typedef enum {
+  REPORT_NONE,
+  REPORT_COUNTS,
+  REPORT_PIE,
+  REPORT_END
+} report_t;
+
+static const struct { const char *s; const report_t v; } report_names[] = {
+  { "none", REPORT_NONE },
+  { "counts", REPORT_COUNTS },
+  { "pie", REPORT_PIE },
+  { NULL, REPORT_END }
+};
+
+static report_t report_type( const char *str )
+{
+  int i = 0;
+  while( report_names[i].s != NULL ) {
+    if( !strcmp( str, report_names[i].s ) ) {
+      return report_names[i].v;
+    }
+    i++;
+  }
+  return REPORT_COUNTS; // default
+}
+
+static report_t global_report_type = WOOL_PIE_TIMES ? REPORT_PIE : REPORT_COUNTS; // default if not set from command line
+
 #if WOOL_PIE_TIMES 
 
 char *ctr_h[] = {
@@ -3185,6 +3221,9 @@ void wool_fini( void )
 #if COUNT_EVENTS
   int j;
 #endif
+#if WOOL_PIE_TIMES
+  unsigned long long count_at_end;
+#endif
 
   milestone_art = us_elapsed();
 
@@ -3222,6 +3261,10 @@ void wool_fini( void )
   }
   milestone_awj = us_elapsed();
 
+  #if WOOL_PIE_TIMES
+    count_at_end = gethrtime();
+  #endif
+
   if( log_file_name != NULL ) {
     log_file = fopen( log_file_name, "w" );
   } else {
@@ -3250,36 +3293,99 @@ void wool_fini( void )
 
 #if COUNT_EVENTS
 
-  fprintf( log_file, "SIZES  Worker %lu  Task %lu Lock %lu\n", sizeof(Worker), 
-                   sizeof(Task),
-                   sizeof(wool_lock_t) );
+  if( global_report_type == REPORT_COUNTS ) {
+  
+    fprintf( log_file, "SIZES  Worker %lu  Task %lu Lock %lu\n", sizeof(Worker), 
+                     sizeof(Task),
+                     sizeof(wool_lock_t) );
 
-  fprintf( log_file, "WorkerNo " );
-  for( j = 0; j < CTR_MAX; j++ ) {
-    if( ctr_h[j] != NULL ) {
-      fprintf( log_file, "%s ", ctr_h[j] );
-      ctr_all[j] = 0;
-    }
-  }
-  for( i = 0; i < n_workers; i++ ) {
-    unsigned long long *lctr = workers[i]->ctr;
-    lctr[ CTR_spawn ] = lctr[ CTR_inlined ] + lctr[ CTR_read ] + lctr[ CTR_waits ];
-    fprintf( log_file, "\nSTAT %3d ", i );
+    fprintf( log_file, "WorkerNo " );
     for( j = 0; j < CTR_MAX; j++ ) {
       if( ctr_h[j] != NULL ) {
-        ctr_all[j] += lctr[j];
-        fprintf( log_file, "%*llu ", (int) strlen( ctr_h[j] ), lctr[j] );
+        fprintf( log_file, "%s ", ctr_h[j] );
+        ctr_all[j] = 0;
       }
     }
-  }
-  fprintf( log_file, "\n     ALL " );
-  for( j = 0; j < CTR_MAX; j++ ) {
-    if( ctr_h[j] != NULL ) {
-      fprintf( log_file, "%*llu ", (int) strlen( ctr_h[j] ), ctr_all[j] );
+    for( i = 0; i < n_workers; i++ ) {
+      unsigned long long *lctr = workers[i]->ctr;
+      lctr[ CTR_spawn ] = lctr[ CTR_inlined ] + lctr[ CTR_read ] + lctr[ CTR_waits ];
+      fprintf( log_file, "\nSTAT %3d ", i );
+      for( j = 0; j < CTR_MAX; j++ ) {
+        if( ctr_h[j] != NULL ) {
+          ctr_all[j] += lctr[j];
+          fprintf( log_file, "%*llu ", (int) strlen( ctr_h[j] ), lctr[j] );
+        }
+      }
     }
-  }
-  fprintf( log_file, "\n" );
+    fprintf( log_file, "\n     ALL " );
+    for( j = 0; j < CTR_MAX; j++ ) {
+      if( ctr_h[j] != NULL ) {
+        fprintf( log_file, "%*llu ", (int) strlen( ctr_h[j] ), ctr_all[j] );
+      }
+    }
+    fprintf( log_file, "\n" );
+  } else if( global_report_type == REPORT_PIE ) {
+    unsigned long long elapsed_count = count_at_end - count_at_first_milestone;
+    unsigned long long count_per_ms = elapsed_count / ( milestone_awj / 1000 );
+    unsigned long long sum_count;
+    double dcpm = (double) count_per_ms;
+    int initial_steals = 0;
 
+    fprintf( log_file, "\nMeasurement clock (tick) frequency:  %.2f GHz\n\n", count_per_ms / 1000000.0 );
+    for( i = 0; i < n_workers; i++ ) {
+      int j;
+      unsigned long long *lctr = workers[i]->ctr;
+      lctr[ CTR_spawn ] = lctr[ CTR_inlined ] + lctr[ CTR_read ] + lctr[ CTR_waits ];
+      for( j = 0; j < CTR_MAX; j++ ) {
+        ctr_all[j] += lctr[j];
+      }
+      if( lctr[CTR_wsteal] > 0 ) {
+        initial_steals++;
+      }
+    }
+    sum_count = ctr_all[CTR_init] + ctr_all[CTR_wapp] + ctr_all[CTR_lapp] + ctr_all[CTR_wsteal] + ctr_all[CTR_lsteal]
+              + ctr_all[CTR_close] + ctr_all[CTR_wstealsucc] + ctr_all[CTR_lstealsucc] + ctr_all[CTR_wsignal] 
+              + ctr_all[CTR_lsignal];
+
+    fprintf( log_file,  "Aggregated time per pie slice, total time: %.2f CPU seconds\n", sum_count / (1000*dcpm) );
+    fprintf( log_file,  "Startup time:    %10.2f ms\n", ctr_all[CTR_init] / dcpm );
+    fprintf( log_file,  "Steal work:      %10.2f ms\n", ctr_all[CTR_wapp] / dcpm );
+    fprintf( log_file,  "Leap work:       %10.2f ms\n", ctr_all[CTR_lapp] / dcpm );
+    fprintf( log_file,  "Steal overhead:  %10.2f ms\n", (ctr_all[CTR_wstealsucc]+ctr_all[CTR_wsignal]) / dcpm );
+    fprintf( log_file,  "Leap overhead:   %10.2f ms\n", (ctr_all[CTR_lstealsucc]+ctr_all[CTR_lsignal]) / dcpm );
+    fprintf( log_file,  "Steal search:    %10.2f ms\n", (ctr_all[CTR_wsteal]-ctr_all[CTR_wstealsucc]-ctr_all[CTR_wsignal]) / dcpm );
+    fprintf( log_file,  "Leap search:     %10.2f ms\n", (ctr_all[CTR_lsteal]-ctr_all[CTR_lstealsucc]-ctr_all[CTR_lsignal]) / dcpm );
+    fprintf( log_file,  "Exit time:       %10.2f ms\n", ctr_all[CTR_close] / dcpm );
+    fprintf( log_file,  "\n" );
+
+    fprintf( log_file,  "Time per operation\n" );
+    if( ctr_all[CTR_steals] - initial_steals != 0 ){
+      fprintf( log_file,  "Steal success:  %5.0f ticks\n", (double) ctr_all[CTR_wstealsucc]/(ctr_all[CTR_steals]-initial_steals) );
+    }
+    if( ctr_all[CTR_steals] != ctr_all[CTR_steal_tries] ) {
+      fprintf( log_file,  "Steal failure:  %5.0f ticks\n", 
+                         (double) (ctr_all[CTR_wsteal]-ctr_all[CTR_wstealsucc]) / (ctr_all[CTR_steal_tries]-ctr_all[CTR_steals]) );
+    }
+    if( ctr_all[CTR_leaps] != 0 ){
+      fprintf( log_file,  "Leap success:   %5.0f ticks\n", (double) ctr_all[CTR_lstealsucc]/ctr_all[CTR_leaps] );
+    }
+    if( ctr_all[CTR_leaps] != ctr_all[CTR_leap_tries] ) {
+      fprintf( log_file,  "Leap failure:   %5.0f ticks\n", 
+                         (double) (ctr_all[CTR_lsteal]-ctr_all[CTR_lstealsucc]) / (ctr_all[CTR_leap_tries]-ctr_all[CTR_leaps]) );
+    }
+    if( ctr_all[CTR_steals] != 0 ){
+      fprintf( log_file,  "Steal signal:   %5.0f ticks\n", (double) ctr_all[CTR_wsignal]/ctr_all[CTR_steals] );
+    }
+    if( ctr_all[CTR_leaps] != 0 ){
+      fprintf( log_file,  "Leap signal:    %5.0f ticks\n", (double) ctr_all[CTR_lsignal] / ctr_all[CTR_leaps] );
+    }
+    fprintf( log_file,  "\nSome more statistics on task sizes and stealing\n" );
+    fprintf( log_file,  "Tasks spawned: %10llu (average work per task:  %10.0f ticks)\n", 
+                         ctr_all[CTR_spawn], (ctr_all[CTR_wapp]+ctr_all[CTR_lapp]) / (double) (ctr_all[CTR_spawn]+1) );
+    fprintf( log_file,  "Tasks stolen:  %10llu (average work per steal: %10.0f ticks)\n", 
+                         ctr_all[CTR_steals]+ctr_all[CTR_leaps], 
+                         (ctr_all[CTR_wapp]+ctr_all[CTR_lapp]) / (double) (ctr_all[CTR_steals]+ctr_all[CTR_leaps]+1) );
+  }
 #endif
 
 #if WOOL_TIME
@@ -3344,7 +3450,7 @@ static void start_workers( void )
 
   if( sizeof( Worker ) % LINE_SIZE != 0 || sizeof( Task ) % LINE_SIZE != 0 ) {
     fprintf( stderr, "Unaligned Task (%lu) or Worker (%lu) size\n",
-                     sizeof(Task), sizeof(Worker) );
+                     (unsigned long) sizeof(Task), (unsigned long) sizeof(Worker) );
     exit(1);
   }
 
@@ -3455,7 +3561,7 @@ static int decode_options( int argc, char **argv )
   while( 1 ) {
     int c;
 
-    c = getopt( argc, argv, "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:L:" );
+    c = getopt( argc, argv, "a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:L:R:" );
 
     if( c == -1 || c == '?' ) break;
 
@@ -3515,7 +3621,7 @@ static int decode_options( int argc, char **argv )
       case 'g': global_n_blocks  = atoi( optarg );
                 break;
 #endif
-#if WOOL_ADD_STEALABLE
+#if WOOL_ADD_STEALABLE && !WOOL_MEASURE_SPAN
       case 'c': stealable_chunk_size = atoi( optarg );
                 break;
       case 'm': steal_margin = atoi( optarg );
@@ -3554,6 +3660,11 @@ static int decode_options( int argc, char **argv )
                 break;
 #endif
       case 'L': global_trlf_threshold = atoi( optarg );
+                break;
+#if COUNT_EVENTS
+      case 'R': global_report_type = report_type( optarg );
+                break;
+#endif
     }
   }
 
@@ -3571,6 +3682,10 @@ int wool_init( int argc, char **argv )
 {
 
   us_elapsed();
+
+  #if WOOL_PIE_TIMES
+    count_at_first_milestone = gethrtime();
+  #endif
 
   argc = decode_options( argc, argv );
 
