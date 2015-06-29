@@ -17,7 +17,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+   Foundation, Inc., 59 Temple Pwool, Suite 330, Boston, MA
    02111-1307, USA.
 */
 
@@ -100,8 +100,8 @@
 
 #define SYNC_MORE 0
 
-#ifndef WOOL_PIE_TIMES
-  #define WOOL_PIE_TIMES 0
+#ifndef WOOL_WOOL
+  #define WOOL_WOOL 0
 #endif
 
 #ifndef WOOL_FAST_TIME
@@ -109,7 +109,7 @@
 #endif
 
 #ifndef COUNT_EVENTS
-  #define COUNT_EVENTS ( WOOL_PIE_TIMES | WOOL_FAST_TIME )
+  #define COUNT_EVENTS ( WOOL_WOOL | WOOL_FAST_TIME )
 #endif
 
 #ifndef COUNT_EVENTS_EXP
@@ -561,7 +561,7 @@ typedef struct _Worker {
 
 #if LOG_EVENTS
   void logEvent( Worker*, int );
-#elif 0 && WOOL_PIE_TIMES
+#elif 0 && WOOL_WOOL
   #define logEvent( w, i ) time_event( w, i )
 #else
   #define logEvent( w, i ) /* Nothing */

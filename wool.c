@@ -17,7 +17,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+   Foundation, Inc., 59 Temple Pwool, Suite 330, Boston, MA
    02111-1307, USA.
 
    The GNU General Public License is contained in the file COPYING.
@@ -299,7 +299,7 @@ static long long unsigned
 static long long unsigned count_at_first_milestone;
 
 
-#if WOOL_MEASURE_SPAN || LOG_EVENTS || WOOL_PIE_TIMES
+#if WOOL_MEASURE_SPAN || LOG_EVENTS || WOOL_WOOL
 
 static hrtime_t gethrtime(void);
 
@@ -358,7 +358,7 @@ static hrtime_t gethrtime()
 
 #endif
 
-#if WOOL_PIE_TIMES
+#if WOOL_WOOL
 
 static hrtime_t start_time;
 
@@ -1635,7 +1635,7 @@ static int trans_leap( Worker *self, wrapper_t card, Task *dq_top, volatile Task
 
 static void record_leap_fails( Worker *self, unsigned n )
 {
-  #if COUNT_EVENTS && !WOOL_PIE_TIMES
+  #if COUNT_EVENTS && !WOOL_WOOL
   unsigned limits[] = {100, 320, 1000, 3200, 10000, 32000, 100000, 1000000000};
   int i;
 
@@ -1967,7 +1967,7 @@ static void init_worker( int w_idx )
   }
   w->idx = w_idx;
   w->clock = 0;
-#if WOOL_PIE_TIMES
+#if WOOL_WOOL
   w->time = gethrtime();
 #else
   w->time = 0;
@@ -2529,7 +2529,7 @@ static inline int record_steal( Worker *self, int n, int attempts, int steal_out
     // Ok, this is clunky, but the idea is to record if we had to try many times
     // before we managed to steal.
  
-    #if !WOOL_PIE_TIMES
+    #if !WOOL_WOOL
     if( attempts == 1 ) {
       PR_INC( self, CTR_steal_1s );
       PR_ADD( self, CTR_steal_1t, attempts );
@@ -3023,7 +3023,7 @@ static void *do_work( void *arg )
     sync_clocks( workers[self_idx] );
   #endif
 
-  #if WOOL_PIE_TIMES
+  #if WOOL_WOOL
     (*self_p)->time = gethrtime();
   #endif
 
@@ -3066,9 +3066,9 @@ static report_t report_type( const char *str )
   return REPORT_COUNTS; // default
 }
 
-static report_t global_report_type = WOOL_PIE_TIMES ? REPORT_PIE : REPORT_COUNTS; // default if not set from command line
+static report_t global_report_type = WOOL_WOOL ? REPORT_PIE : REPORT_COUNTS; // default if not set from command line
 
-#if WOOL_PIE_TIMES 
+#if WOOL_WOOL 
 
 char *ctr_h[] = {
   "    Spawns",
@@ -3221,7 +3221,7 @@ void wool_fini( void )
 #if COUNT_EVENTS
   int j;
 #endif
-#if WOOL_PIE_TIMES
+#if WOOL_WOOL
   unsigned long long count_at_end;
 #endif
 
@@ -3261,7 +3261,7 @@ void wool_fini( void )
   }
   milestone_awj = us_elapsed();
 
-  #if WOOL_PIE_TIMES
+  #if WOOL_WOOL
     count_at_end = gethrtime();
   #endif
 
@@ -3683,7 +3683,7 @@ int wool_init( int argc, char **argv )
 
   us_elapsed();
 
-  #if WOOL_PIE_TIMES
+  #if WOOL_WOOL
     count_at_first_milestone = gethrtime();
   #endif
 

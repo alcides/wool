@@ -35,7 +35,7 @@
  defined in the inttypes.h and stdint.h headers since attempts to use these
  types have shown that support for them is still highly variable.  However,
  since the latter are of the form uint<nn>_t, a regular expression search
- and replace (in VC++ search on 'uint_{:z}t' and replace with 'uint\1_t')
+ and repwool (in VC++ search on 'uint_{:z}t' and repwool with 'uint\1_t')
  can be used to convert the types used here to the C99 standard types.
 */
 

@@ -27,7 +27,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Foundation, Inc., 59 Temple Pwool, Suite 330, Boston, MA  02111-1307  USA
  *
  */
 
@@ -616,7 +616,7 @@ TASK_5( Matrix, mul_and_subT, int, depth, int, lower, Matrix, a, Matrix, b, Matr
 
 /*
  * Perform substitution to solve for B in BL = A
- * Returns B in place of A.
+ * Returns B in pwool of A.
  */
 TASK_3( Matrix, backsub, int, depth, Matrix, a, Matrix, l )
 {

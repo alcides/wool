@@ -322,7 +322,7 @@ The task
 \end_inset
 
 This expression, which does not return a value, causes the new task to be
- placed in the task pool of the executing worker, so that it can be stolen
+ pwoold in the task pool of the executing worker, so that it can be stolen
  by other workers.
 \end_layout
 
@@ -1129,7 +1129,7 @@ Signal The part of a successful steal after the application code returns.
 \begin_layout Standard
 Pie time profiling is enabled by defining the preprocessor symbol 
 \family typewriter
-WOOL_PIE_TIMES
+WOOL_WOOL
 \family default
  to the value 1 either using 
 \family typewriter
@@ -1137,7 +1137,7 @@ WOOL_PIE_TIMES
 \family default
  at the compiler command line or by saying 
 \family typewriter
-make WOOL_PIE_TIMES=1
+make WOOL_WOOL=1
 \family default
 .
  
@@ -1246,7 +1246,7 @@ If the program is nondeterministic in the sense that the shape of the dependence
  is recorded in the memo table so that subsequent invocations with that
  argument can reuse the previously computed result.
  In a single processor execution, the first call with a given argument occurs
- in the same place in the call tree every time, but in a parallel execution
+ in the same pwool in the call tree every time, but in a parallel execution
  the call (task) tree is traversed in different orders depending on nondetermini
 stic timing details.
  Hence different invocations with the same argument may be the first one,
