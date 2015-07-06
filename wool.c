@@ -3553,7 +3553,7 @@ static int decode_options( int argc, char **argv )
 {
   int a_ctr = 0, i;
 
-  n_procs = 1;
+  n_procs = sysconf(_SC_NPROCESSORS_ONLN);
   workers_per_thread = 0;
   opterr = 0;
 
