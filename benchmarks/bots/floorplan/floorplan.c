@@ -23,9 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "app-desc.h"
+
 #include "bots.h"
-#include "../wool-lib/wool.h"
+#include "wool.h"
 
 #define ROWS 64
 #define COLS 64
@@ -347,7 +347,7 @@ CALL(wl_task, &NWS[0], i,lp,id,nn,level, nnc, FOOTPRINT, BOARD, CELLS);
   int NWS[DMAX*2];
 
   nnc = nnl = 0;
-
+#if defined(MANUAL_CUTOFF)
     if(level < bots_cutoff_value )
       {
   for (i = 0; i < CELLS[id].n; i++) 
@@ -368,13 +368,16 @@ CALL(wl_task, &NWS[0], i,lp,id,nn,level, nnc, FOOTPRINT, BOARD, CELLS);
       } 
   else 
 {
+	#endif
   for (i = 0; i < CELLS[id].n; i++) {
       nn = starts(id, i, NWS, CELLS);
       nnl += nn;
       for (j = 0; j < nn; j++) {
 	CALL(wl_task, &NWS, i,j,id,nn,level, &nnc, FOOTPRINT, BOARD, CELLS);
       }
+	  #if defined(MANUAL_CUTOFF)
       }
+	#endif
 return nnc+nnl;
   }
   

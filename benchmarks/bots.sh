@@ -1,0 +1,1 @@
+./bin/bots_fib -n 50

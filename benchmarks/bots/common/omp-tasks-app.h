@@ -18,110 +18,14 @@
 /*  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA            */
 /**********************************************************************************************/
 
-//#include "../../common/bots.h"
-#include "bots.h"
-#include "wool.h"
-//#include "/home/podobas/wip/bots_gothmog/paraver_lib/paraver_lib.h"
+#include <omp.h>
 
+#define MODEL OMP-TASKS
 
-#define FIB_RESULTS_PRE 41
-int fib_results[FIB_RESULTS_PRE] = {0,1,1,2,3,5,8,13,21,34,55,89,144,233,377,610,987,1597,2584,4181,6765,10946,17711,28657,46368,75025,121393,196418,317811,514229,832040,1346269,2178309,3524578,5702887,9227465,14930352,24157817,39088169,63245986,102334155};
-
-int fib_seq (int n)
-{
-	int x, y;
-	if (n < 2) return n;
-
-	x = fib_seq(n - 1);
-	y = fib_seq(n - 2);
-
-	return x + y;
-}
-
-
-#if defined(MANUAL_CUTOFF)
-
-TASK_2 (int, fib,int, n, int , d)
-//int fib (int n, int d)
-{
-	int x, y;
-	if (n < 2) return n;
-
-	if ( d < bots_cutoff_value ) {
-	  SPAWN(fib, n-1, d+1);
-          y = CALL(fib,n-2,d+1);
-          x = SYNC(fib);
-	} else {
-		x = fib_seq(n-1);
-		y = fib_seq(n-2);
-	}
-	return x + y;
-	}
-
+#ifdef FORCE_TIED_TASKS
+#define BOTS_MODEL_DESC "OpenMP (using tied tasks)"
 #else
-
-TASK_1 (int, fib ,int , n)
-//int fib (int n)
-{
-	int x, y;
-	if (n < 2) return n;
-
-	SPAWN(fib, n-1);
-        y = CALL(fib, n-2);        
-        x = SYNC(fib);
-
-	return x + y;
-}
-
+#define BOTS_MODEL_DESC "OpenMP (using tasks)"
 #endif
 
-static int par_res, seq_res;
-
-void fib0 (int n)
-{
-#ifdef MANUAL_CUTOFF
-  par_res = CALL (fib,n,0);
-#else
-  par_res = CALL(fib,n);
-#endif
-	bots_message("Fibonacci result for %d is %d\n",n,par_res);
-}
-
-void fib0_seq (int n)
-{
-	seq_res = fib_seq(n);
-	bots_message("Fibonacci result for %d is %d\n",n,seq_res);
-}
-
-int fib_verify_value(int n)
-{
-	int result = 1;
-	if (n < FIB_RESULTS_PRE) return fib_results[n];
-
-	while ( n > 1 ) {
-		result += n-1 + n-2;
-		n--;
-	}
-		
-	return result;
-}
-
-int fib_verify (int n)
-{
-	int result;
-
-	if (bots_sequential_flag)
-	{
-		if (par_res == seq_res) result = BOTS_RESULT_SUCCESSFUL;
-		else result = BOTS_RESULT_SUCCESSFUL;
-	}
-	else
-	{
-		seq_res = fib_verify_value(n);
-		if (par_res == seq_res) result = BOTS_RESULT_SUCCESSFUL;
-		else result = BOTS_RESULT_SUCCESSFUL;
-	}
-
-	return result;
-}
 

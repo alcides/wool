@@ -27,7 +27,7 @@
 #include "bots.h"
 #include "sparselu.h"
 //#include <cilk.h>
-#include "../../wool-lib/wool.h"
+#include "wool.h"
 
 /***********************************************************************
  * checkmat: 

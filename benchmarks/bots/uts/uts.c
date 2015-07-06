@@ -68,7 +68,7 @@
 #include "bots.h"
 #include "uts.h"
 //#include <cilk.h>
-#include "../wool-lib/wool.h"
+#include "wool.h"
 
 /***********************************************************
  *  Global state                                           *

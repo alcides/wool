@@ -39,7 +39,7 @@
 #include "bots.h"
 //#Include <Omp.h>
 //#include <cilk.h>
-#include "../wool-lib/wool.h"
+#include "wool.h"
 
 /* Checking information */
 
@@ -122,8 +122,8 @@ void nqueens_ser (int n, int j, char *a, int *solutions)
 
 //Pre-declare it
 //void nqueens_cilk( int n , int j , char *a, int *csols , int depth , int i);
-//VOID_TASK_6 (nqueens_wool, int , n , int , j , char* , a , int* , csols , int , depth , int , i);
-static inline __attribute__((__always_inline__))void nqueens_wool_CALL_DSP( Worker *, Task *, int , int, int , char*, int* , int , int  );
+VOID_TASK_DECL_6 (nqueens_wool, int, int, char*, int*, int, int);
+//static inline __attribute__((__always_inline__))void nqueens_wool_CALL_DSP( Worker *, Task *, int , int, int , char*, int* , int , int  );
 
 
 
@@ -226,7 +226,7 @@ VOID_TASK_5 (nqueens , int , n , int , j , char* , a , int* , solutions , int , 
 
 //To be used with CILK/WOOL
 //void nqueens_cilk( int n , int j , char *a, int *csols , int depth , int i)
-VOID_TASK_6 (nqueens_wool, int , n , int , j , char* , a , int* , csols , int , depth , int , i)
+VOID_TASK_IMPL_6 (nqueens_wool, int , n , int , j , char* , a , int* , csols , int , depth , int , i)
 {
 
 

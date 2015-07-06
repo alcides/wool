@@ -42,7 +42,7 @@
 #include <pthread.h>
 
 //Artur Podobas
-#include "../wool-lib/wool.h"
+#include "wool.h"
 
 /* global variables */
 int sim_level;
@@ -501,7 +501,7 @@ void put_in_hosp(struct Hosp *hosp, struct Patient *patient)
    /* Uses lists v->hosp->waiting, and v->hosp->assess */
    check_patients_waiting(village);
 
-     for (i=0;i<ntask;n++) SYNC(sim_village_par);
+     for (i=0;i<ntask;i++) SYNC(sim_village_par);
 
    /* Uses lists v->hosp->realloc, v->hosp->asses and v->hosp->waiting */
    check_patients_realloc(village);

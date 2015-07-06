@@ -32,7 +32,7 @@
 #include "bots.h"
 #include "app-desc.h"
 //#include <cilk.h>
-#include "../wool-lib/wool.h"
+#include "wool.h"
 
 
 /* Definitions and operations for complex numbers */

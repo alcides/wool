@@ -41,7 +41,7 @@
 #include "bots.h"
 #include "strassen.h"
 //#include <cilk.h>
-#include "../wool-lib/wool.h"
+#include "wool.h"
 
 /***********************************************************************
  * Naive sequential algorithm, for comparison purposes

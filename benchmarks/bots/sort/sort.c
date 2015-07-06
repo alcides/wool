@@ -67,7 +67,7 @@
 #include "bots.h"
 #include "app-desc.h"
 //#include <cilk.h>
-#include "../wool-lib/wool.h"
+#include "wool.h"
 
 
 typedef long ELM;

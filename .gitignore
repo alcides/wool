@@ -1,0 +1,6 @@
+Makefile
+bin
+cmake_install.cmake
+wool.h
+CMakeFiles
+CMakeCache.txt

@@ -32,7 +32,7 @@
 #include "app-desc.h"
 
 //Artur Podobas for wool
-#include "../../wool-lib/wool.h"
+#include "wool.h"
 
 //Artur Podobas
 //#include <cilk.h>
