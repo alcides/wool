@@ -194,6 +194,8 @@
 
 unsigned block_size(int);
 
+#define CUTOFF_MECHANISM _WOOL_(cutoff_maxtasks)(__self, __dq_top) > 5
+
 #define IN_CURRENT(self,p) (self->block_base[self->t_idx] <= p && \
                             p < self->block_base[self->t_idx] + block_size( self->t_idx ) )
 
@@ -647,6 +649,10 @@ Task *_WOOL_(slow_spawn)( Worker *, Task *, wrapper_t );
 Task *_WOOL_(new_slow_sync)( Worker *, Task *, grab_res_t );
 Worker *_WOOL_(slow_get_self)( void );
 Task *_WOOL_(slow_get_top)( Worker * );
+int _WOOL_(cutoff_never)( Worker *self, Task *top );
+int _WOOL_(cutoff_always)( Worker *self, Task *top );
+int _WOOL_(cutoff_random)( Worker *self, Task *top );
+int _WOOL_(cutoff_maxtasks)( Worker *self, Task *top );
 
 int  wool_init( int, char ** );
 void wool_fini( void );
@@ -899,6 +905,7 @@ grab_res_t _WOOL_(grab_in_sync)( Worker *self, Task *top )
     #endif
   #endif
 }
+
 
 static inline __attribute__((__always_inline__)) 
 int _WOOL_(new_fast_sync)( Worker *self, Task **top )

@@ -3695,3 +3695,34 @@ int wool_init( int argc, char **argv )
 
 }
 
+inline __attribute__((__always_inline__)) 
+int wool_tasks_in_worker(Worker *self) {
+	return self->n_public + (self->private_size/128);
+}
+
+
+inline __attribute__((__always_inline__)) 
+int _WOOL_(cutoff_never)( Worker *self, Task *top ) {
+	return 0;
+}
+
+inline __attribute__((__always_inline__)) 
+int _WOOL_(cutoff_always)( Worker *self, Task *top ) {
+	return 1;
+}
+
+inline __attribute__((__always_inline__)) 
+int _WOOL_(cutoff_random)( Worker *self, Task *top ) {
+	unsigned int seed = 10000;
+	return myrand(&seed,2) == 1;
+}
+
+inline __attribute__((__always_inline__)) 
+int _WOOL_(cutoff_maxtasks)( Worker *self, Task *top ) {
+	int i, count = 0;
+    for( i = 0; i<n_workers; i++ ) {
+		Worker *w = workers[i];
+		count += wool_tasks_in_worker(self);
+  	}
+	return count;
+}
