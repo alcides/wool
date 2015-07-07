@@ -194,7 +194,16 @@
 
 unsigned block_size(int);
 
-#define CUTOFF_MECHANISM _WOOL_(cutoff_maxtasks)(__self, __dq_top) > 2
+
+
+#define CUTOFF_SEQUENTIAL 1
+#define CUTOFF_PARALLEL 0
+#define CUTOFF_RANDOM _WOOL_(cutoff_random)(__self, __dq_top)
+#define CUTOFF_MAXTASKS(x) _WOOL_(cutoff_maxtasks)(__self, __dq_top) > x
+
+#ifndef CUTOFF_MECHANISM
+	#define CUTOFF_MECHANISM CUTOFF_MAXTASKS(2)
+#endif
 
 #define IN_CURRENT(self,p) (self->block_base[self->t_idx] <= p && \
                             p < self->block_base[self->t_idx] + block_size( self->t_idx ) )
@@ -649,8 +658,6 @@ Task *_WOOL_(slow_spawn)( Worker *, Task *, wrapper_t );
 Task *_WOOL_(new_slow_sync)( Worker *, Task *, grab_res_t );
 Worker *_WOOL_(slow_get_self)( void );
 Task *_WOOL_(slow_get_top)( Worker * );
-int _WOOL_(cutoff_never)( Worker *self, Task *top );
-int _WOOL_(cutoff_always)( Worker *self, Task *top );
 int _WOOL_(cutoff_random)( Worker *self, Task *top );
 int _WOOL_(cutoff_maxtasks)( Worker *self, Task *top );
 

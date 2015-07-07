@@ -53,6 +53,8 @@ else()
   set (WOOL_COUNT_SPLITS "WOOL_COUNT_SPLITS=0")
 endif()
 
+add_definitions("-DCUTOFF_MECHANISM=\"${CUTOFF_MECHANISM}\"")
+
 add_custom_command(OUTPUT wool.h COMMAND ./wool-gen.sh 32 > wool.h DEPENDS wool-gen.sh wool.c)
 
 set(CMAKE_C_FLAGS "-g -O3 -Wall -Wno-unused -Wno-unused-parameter")
