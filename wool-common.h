@@ -194,7 +194,7 @@
 
 unsigned block_size(int);
 
-#define CUTOFF_MECHANISM _WOOL_(cutoff_maxtasks)(__self, __dq_top) > 5
+#define CUTOFF_MECHANISM _WOOL_(cutoff_maxtasks)(__self, __dq_top) > 2
 
 #define IN_CURRENT(self,p) (self->block_base[self->t_idx] <= p && \
                             p < self->block_base[self->t_idx] + block_size( self->t_idx ) )
